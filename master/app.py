@@ -44,9 +44,9 @@ class BoundingBoxAPI(Resource):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('image', type=list, location='json')
         self.reqparse.add_argument('dim', type=list, location='json')
-        self.fd = face_detector()
+        self.fd = OpenFaceAPI()
 
-        super(ClassifierAPI, self).__init__()
+        super(BoundingBoxAPI, self).__init__()
 
     def post(self):
         try:
