@@ -5,9 +5,10 @@ import os
 import re
 import json
 import cv2
+from glob import glob
 
 class OpenFaceClient:
-    def __init__(self, url = "http://192.168.99.100:5000"):
+    def __init__(self, url="http://192.168.99.100:5000"):
         self.url = url
 
 
@@ -33,14 +34,34 @@ class OpenFaceClient:
         r.raise_for_status()
         return r.json(), bgrImg
     
-    def faces_to_file(self, imgPath, margin=10):
+    
+    def img2faces(self, imgPath, margin=10):
+        faces = []
         boxes, bgrImg = self.get_face_bb(imgPath)
         for i, box in enumerate(boxes['rects']):
-            print 'extracting face %i at %s' % (i, str(box))
-            outpath = '%s-face-%d.png' % (re.sub('\.*?$', '', imgPath), i)
-            
             (top, bottom, left, right) = box
             im_sub = bgrImg[max(0, top - margin):(bottom + margin), max(0, left - margin):(right + margin), :]
-            cv2.imwrite(outpath, im_sub)
+            faces.append(im_sub)
         
-        return True
+        return faces
+    
+    def save_faces(self, dirPath, imgPath, faces, dirName='detected-faces'):
+        outPath = os.path.join(dirPath, dirName, os.path.basename(imgPath))
+        if not os.path.exists(outPath):
+            os.makedirs(outPath)
+        
+        paths = []
+        for i,face in enumerate(faces):
+            p = os.path.join(outPath, '%d.png' % i)
+            cv2.imwrite(p, face)
+            paths.append(p)
+        
+        return paths
+        
+    def dir2faces(self, dirPath, margin=10):
+        imgPaths = glob(os.path.join(dirPath, "*"))
+        for imgPath in imgPaths:
+            print 'processing %s' % imgPath
+            faces = self.img2faces(imgPath, margin=margin)
+            _ = self.save_faces(dirPath, imgPath, faces)
+            
