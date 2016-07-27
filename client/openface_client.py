@@ -1,31 +1,29 @@
 #!/bin/env python
 
-import requests
 import os
 import re
-import json
+import sys
 import cv2
+import json
+import requests
 from glob import glob
 
 class OpenFaceClient:
     def __init__(self, url="http://192.168.99.100:5000"):
         self.url = url
-
-
+        
     def read_image(self, imgPath):
         bgrImg = cv2.imread(imgPath)
         rgbImg = cv2.cvtColor(bgrImg, cv2.COLOR_BGR2RGB)
         fltImg = rgbImg.flatten().tolist()
         return fltImg, bgrImg, rgbImg.shape
-
-
+        
     def check_status(self):
         cmd = self.url + "/api/health"
         r = requests.get(cmd)
         r.raise_for_status()
         return r.json()
-
-
+        
     def get_face_bb(self, imgPath):
         cmd = self.url + "/api/bbox"
         fltImg, bgrImg, dim = self.read_image(imgPath)
@@ -33,8 +31,7 @@ class OpenFaceClient:
         r = requests.post(cmd, json=payload, headers= {})
         r.raise_for_status()
         return r.json(), bgrImg
-    
-    
+        
     def img2faces(self, imgPath, margin=10):
         faces = []
         boxes, bgrImg = self.get_face_bb(imgPath)
@@ -60,6 +57,11 @@ class OpenFaceClient:
         
     def dir2faces(self, dirPath, margin=10):
         imgPaths = glob(os.path.join(dirPath, "*"))
+        for ip in imgPaths:
+            if 'detected-faces' in ip:
+                print >> sys.stderr, 'found detected-faces'
+                return
+            
         for imgPath in imgPaths:
             print 'processing %s' % imgPath
             faces = self.img2faces(imgPath, margin=margin)
